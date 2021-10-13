@@ -66,4 +66,40 @@ paper_df = pd.DataFrame(paper_df)
 print(paper_df.head())
 
 # Add paper referenced to database
-
+reference_df = []
+for paper in papers:
+    referenced_papers = []
+    for reference in paper.references:
+        referenced_papers.append(Paper(
+            title=reference['title'].lower().strip(),
+            authors=reference['authors'].split('; '),
+            abstract='',
+            references=[]
+        ))
+    for r_paper in referenced_papers:
+        origin = paper_df.loc[
+            (paper_df.title == paper.title) & (paper_df.author_count == len(paper.authors))].index[0]
+        matching_rows = paper_df.loc[
+            (paper_df.title == r_paper.title) & (paper_df.author_count == len(r_paper.authors))]
+        if len(matching_rows) > 1:
+            raise ValueError('More than one paper matched for reference')
+        if len(matching_rows) == 1:
+            reference = {
+                'origin': origin,
+                'destination': matching_rows.index[0]
+            }
+            reference_df.append(reference)
+        else:
+            paper_dict = {
+                'title': r_paper.title,
+                'author_count': len(r_paper.authors),
+                'reference_count': 0
+            }
+            paper_df = paper_df.append(paper_dict, ignore_index=True)
+            reference = {
+                'origin': origin,
+                'destination': paper_df.iloc[-1].index[0]
+            }
+reference_df = pd.DataFrame(reference_df)
+print(paper_df.head())
+print(reference_df.head())
